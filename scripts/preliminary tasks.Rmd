@@ -8,6 +8,8 @@ date: "2024-11-14"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Functions and libraries
+
 ```{r}
 library(tidyverse)
 require(tidytext)
@@ -54,18 +56,54 @@ parse_data <- function(.df){
 
 ```
 
+# Task 1
+
+add headers to data
+
 ```{r}
 claims_clean_headers <- claims_raw %>%
   parse_data()
 ```
 
-example from class activity
+change data with headers into tf-idf
+
+```{r}
+headers_clean <- claims_clean_headers %>%
+  filter(str_detect(text_tmp, '<!')) %>%
+  rowwise() %>%
+  mutate(text_clean = parse_fn(text_tmp)) %>%
+  select(-text_tmp) %>%
+  unnest(text_clean) %>% 
+  select(-c(1:4), -6)
+
+headers_tfidf <- headers_clean %>% 
+  unnest_tokens(output = token, 
+                input = text_clean, 
+                token = 'words',
+                stopwords = str_remove_all(stop_words$word, 
+                                           '[[:punct:]]')) %>%
+  mutate(token.lem = lemmatize_words(token)) %>%
+  filter(str_length(token.lem) > 2) %>%
+  count(.id, bclass, mclass, token.lem, name = 'n') %>%
+  bind_tf_idf(term = token.lem, 
+              document = .id,
+              n = n) %>%
+  pivot_wider(id_cols = c('.id', 'bclass', 'mclass'),
+              names_from = 'token.lem',
+              values_from = 'tf_idf',
+              values_fill = 0)
+
+headers_tfidf %>% head(3)
+
+```
+
+partition data
 
 ```{r}
 # Step 1: Partitioning
 # partition data
 set.seed(102722)
-partitions <- claims_df %>% initial_split(prop = 0.8)
+partitions <- headers_tfidf %>% initial_split(prop = 0.8)
 
 # separate DTM from labels
 test_dtm <- testing(partitions) %>%
@@ -79,6 +117,8 @@ train_dtm <- training(partitions) %>%
 train_labels <- training(partitions) %>%
   select(.id, bclass, mclass)
 ```
+
+PCA with header data
 
 ```{r}
 # Step 2: Projection
@@ -125,6 +165,8 @@ train_dtm_projected <- proj_out$data
 proj_out$n_pc
 ```
 
+fit header data into logistic regressiong
+
 ```{r}
 # Step 3: Regression
 train <- train_labels %>%
@@ -133,39 +175,5 @@ train <- train_labels %>%
 
 
 fit <- glm(pc1~., data = train)
-```
-
-claims_clean_headers into a tfidf
-
-```{r}
-library(tidyverse)
-library(tidytext)
-library(tokenizers)
-library(textstem)
-library(stopwords)
-
-stpwrd <- stop_words %>%
-  pull(word) %>%
-  str_remove_all('[[:punct:]]')
-
-claims_tokens_long <- claims_clean_headers %>%
-  unnest_tokens(output = token, # specifies new column name
-                input = text_clean, # specifies column containing text
-                token = 'words', # how to tokenize
-                stopwords = stpwrd) %>% # optional stopword removal
-  mutate(token = lemmatize_words(token)) 
-
-claims_tfidf <- claims_tokens_long %>%
-  count(.id, token) %>%
-  bind_tf_idf(term = token,
-              document = .id,
-              n = n) 
-
-claims_df <- claims_tfidf %>%
-  pivot_wider(id_cols = .id, 
-              names_from = token,
-              values_from = tf_idf,
-              values_fill = 0)
-
-claims_df
+summary(fit)
 ```
