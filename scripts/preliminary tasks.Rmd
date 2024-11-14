@@ -59,7 +59,7 @@ claims_clean_headers <- claims_raw %>%
   parse_data()
 ```
 
-data without headers
+example from class activity
 ```{r}
 # path to activity files on repo
 url <- 'https://raw.githubusercontent.com/pstat197/pstat197a/main/materials/activities/data/'
@@ -77,7 +77,7 @@ claims
 # Step 1: Partitioning
 # partition data
 set.seed(102722)
-partitions <- claims_clean %>% initial_split(prop = 0.8)
+partitions <- claims %>% initial_split(prop = 0.8)
 
 # separate DTM from labels
 test_dtm <- testing(partitions) %>%
@@ -110,4 +110,38 @@ train <- train_labels %>%
 
 
 fit <- glm(pc1~., data = train)
+```
+
+claims_clean_headers into a tfidf
+```{r}
+library(tidyverse)
+library(tidytext)
+library(tokenizers)
+library(textstem)
+library(stopwords)
+
+stpwrd <- stop_words %>%
+  pull(word) %>%
+  str_remove_all('[[:punct:]]')
+
+claims_tokens_long <- claims_clean_headers %>%
+  unnest_tokens(output = token, # specifies new column name
+                input = text_clean, # specifies column containing text
+                token = 'words', # how to tokenize
+                stopwords = stpwrd) %>% # optional stopword removal
+  mutate(token = lemmatize_words(token)) 
+
+claims_tfidf <- claims_tokens_long %>%
+  count(.id, token) %>%
+  bind_tf_idf(term = token,
+              document = .id,
+              n = n) 
+
+claims_df <- claims_tfidf %>%
+  pivot_wider(id_cols = .id, 
+              names_from = token,
+              values_from = tf_idf,
+              values_fill = 0)
+
+claims_df
 ```
