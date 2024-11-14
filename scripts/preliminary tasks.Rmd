@@ -295,7 +295,9 @@ test_dtm_bigrams <- testing(partitions_bigrams) %>%
   select(-.id, -bclass)
 test_labels_bigrams <- testing(partitions_bigrams) %>%
   select(.id, bclass)
+```
 
+```{r}
 # PCA projection for bigram data
 proj_out_bigrams <- projection_fn(.dtm = train_dtm_bigrams, .prop = 0.7)
 train_dtm_projected_bigrams <- proj_out_bigrams$data
