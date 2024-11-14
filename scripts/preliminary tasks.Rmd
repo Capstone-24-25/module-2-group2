@@ -56,5 +56,40 @@ claims_clean_headers <- claims_raw %>%
 
 data without headers
 ```{r}
-set.seed(1234)
+# Step 1: Partitioning
+# partition data
+set.seed(102722)
+partitions <- claims %>% initial_split(prop = 0.8)
+
+# separate DTM from labels
+test_dtm <- testing(partitions) %>%
+  select(-.id, -bclass, -mclass)
+test_labels <- testing(partitions) %>%
+  select(.id, bclass, mclass)
+
+# same, training set
+train_dtm <- training(partitions) %>%
+  select(-.id, -bclass, -mclass)
+train_labels <- training(partitions) %>%
+  select(.id, bclass, mclass)
+```
+
+```{r}
+# Step 2: Projection
+# find projections based on training data
+proj_out <- projection_fn(.dtm = train_dtm, .prop = 0.7)
+train_dtm_projected <- proj_out$data
+
+# how many components were used?
+proj_out$n_pc
+```
+
+```{r}
+# Step 3: Regression
+train <- train_labels %>%
+  transmute(bclass = factor(bclass)) %>%
+  bind_cols(train_dtm_projected)
+
+
+fit <- glm(pc1~., data = train)
 ```
