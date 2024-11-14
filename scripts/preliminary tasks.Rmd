@@ -55,8 +55,44 @@ parse_data <- function(.df){
 ```
 
 ```{r}
+# Create claims_clean_headers
 claims_clean_headers <- claims_raw %>%
   parse_data()
+```
+
+```{r}
+# Claims into tfdif
+library(tidyverse)
+library(tidytext)
+library(tokenizers)
+library(textstem)
+library(stopwords)
+
+stpwrd <- stop_words %>%
+  pull(word) %>%
+  str_remove_all('[[:punct:]]')
+
+claims_tokens_long <- claims_clean_headers %>%
+  unnest_tokens(output = token, # specifies new column name
+                input = text_clean, # specifies column containing text
+                token = 'words', # how to tokenize
+                stopwords = stpwrd) %>% # optional stopword removal
+  mutate(token = lemmatize_words(token)) 
+
+claims_tfidf <- claims_tokens_long %>%
+  count(.id, token) %>%
+  bind_tf_idf(term = token,
+              document = .id,
+              n = n) 
+
+claims_df <- claims_tfidf %>%
+  pivot_wider(id_cols = .id, 
+              names_from = token,
+              values_from = tf_idf,
+              values_fill = 0)
+
+claims_df
+colnames(claims_df)
 ```
 
 example from class activity
@@ -68,15 +104,15 @@ partitions <- claims_df %>% initial_split(prop = 0.8)
 
 # separate DTM from labels
 test_dtm <- testing(partitions) %>%
-  select(-.id, -bclass, -mclass)
+  select(-.id)
 test_labels <- testing(partitions) %>%
-  select(.id, bclass, mclass)
+  select(.id)
 
 # same, training set
 train_dtm <- training(partitions) %>%
-  select(-.id, -bclass, -mclass)
+  select(-.id)
 train_labels <- training(partitions) %>%
-  select(.id, bclass, mclass)
+  select(.id)
 ```
 
 ```{r}
@@ -134,36 +170,3 @@ train <- train_labels %>%
 fit <- glm(pc1~., data = train)
 ```
 
-claims_clean_headers into a tfidf
-```{r}
-library(tidyverse)
-library(tidytext)
-library(tokenizers)
-library(textstem)
-library(stopwords)
-
-stpwrd <- stop_words %>%
-  pull(word) %>%
-  str_remove_all('[[:punct:]]')
-
-claims_tokens_long <- claims_clean_headers %>%
-  unnest_tokens(output = token, # specifies new column name
-                input = text_clean, # specifies column containing text
-                token = 'words', # how to tokenize
-                stopwords = stpwrd) %>% # optional stopword removal
-  mutate(token = lemmatize_words(token)) 
-
-claims_tfidf <- claims_tokens_long %>%
-  count(.id, token) %>%
-  bind_tf_idf(term = token,
-              document = .id,
-              n = n) 
-
-claims_df <- claims_tfidf %>%
-  pivot_wider(id_cols = .id, 
-              names_from = token,
-              values_from = tf_idf,
-              values_fill = 0)
-
-claims_df
-```
