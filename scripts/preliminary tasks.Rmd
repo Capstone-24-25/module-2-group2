@@ -61,6 +61,13 @@ claims_clean_headers <- claims_raw %>%
 
 data without headers
 ```{r}
+# path to activity files on repo
+url <- 'https://raw.githubusercontent.com/pstat197/pstat197a/main/materials/activities/data/'
+
+# load a few functions for the activity
+source(paste(url, 'projection-functions.R', sep = ''))
+
+
 # Step 1: Partitioning
 # partition data
 set.seed(102722)
