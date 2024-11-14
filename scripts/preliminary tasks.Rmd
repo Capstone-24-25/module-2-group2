@@ -259,3 +259,11 @@ pred_df1 %>% class_metrics(truth = bclass,
                   pred, 
                   event_level = 'second')
 ```
+
+# Task 2
+## Obtaining bigrams
+```{r}
+headers_tfidf %>%
+  slice_max(tf_idf, n = 2)
+```
+
