@@ -23,53 +23,10 @@ library(modelr)
 library(Matrix)
 library(sparsesvd)
 library(glmnet)
-# function to parse html and clean text
-parse_fn_headers <- function(.html){
-  read_html(.html) %>%
-    html_elements('p, h1, h2, h3 , h4, h5, h6') %>%
-    html_text2() %>%
-    str_c(collapse = ' ') %>%
-    rm_url() %>%
-    rm_email() %>%
-    str_remove_all('\'') %>%
-    str_replace_all(paste(c('\n', 
-                            '[[:punct:]]', 
-                            'nbsp', 
-                            '[[:digit:]]', 
-                            '[[:symbol:]]'),
-                          collapse = '|'), ' ') %>%
-    str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>%
-    tolower() %>%
-    str_replace_all("\\s+", " ")
-}
 
-parse_fn_headers <- function(.html){
-  read_html(.html) %>%
-    html_elements('p, h1, h2, h3 , h4, h5, h6') %>%
-    html_text2() %>%
-    str_c(collapse = ' ') %>%
-    rm_url() %>%
-    rm_email() %>%
-    str_remove_all('\'') %>%
-    str_replace_all(paste(c('\n', 
-                            '[[:punct:]]', 
-                            'nbsp', 
-                            '[[:digit:]]', 
-                            '[[:symbol:]]'),
-                          collapse = '|'), ' ') %>%
-    str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>%
-    tolower() %>%
-    str_replace_all("\\s+", " ")
-}
-# function to apply to claims data
-parse_data <- function(.df){
-  out <- .df %>%
-    filter(str_detect(text_tmp, '<!')) %>%
-    rowwise() %>%
-    mutate(text_clean = parse_fn(text_tmp)) %>%
-    unnest(text_clean) 
-  return(out)
-}
+source('preprocessing.R')
+load("../data/claims-raw.RData")
+load("../data/claims-clean-example.RData")
 
 #PCA project function
 # function
@@ -78,17 +35,14 @@ projection_fn <- function(.dtm, .prop){
   dtm_mx <- .dtm %>%
     as.matrix() %>%
     as('sparseMatrix')
-  
   # compute svd
   svd_out <- sparsesvd(dtm_mx)
-  
   # select number of projections
   var_df <- tibble(var = svd_out$d^2) %>%
     mutate(pc = row_number(),
            cumulative = cumsum(var)/sum(var))
   
   n_pc <- which.min(var_df$cumulative < .prop)
-  
   # extract loadings
   loadings <- svd_out$v[, 1:n_pc] %>% as.matrix()
   
@@ -123,13 +77,13 @@ add headers to data
 ```{r}
 #claims_clean_headers <- claims_raw %>%
   #parse_data()
-save(claims_clean_headers, file = 'claims-clean-headers.RData')
+#save(claims_clean_headers, file = '../data/claims-clean-headers.RData')
 ```
 
 change data with headers into tf-idf
 
 ```{r}
-load('claims-clean-headers.RData')
+load('../data/claims-clean-headers.RData')
 headers_clean <- claims_clean_headers %>%
   select(-c(1:5), -7)
 
