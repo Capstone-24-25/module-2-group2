@@ -16,6 +16,11 @@ require(rvest)
 require(qdapRegex)
 require(stopwords)
 require(tokenizers)
+library(tidymodels)
+library(modelr)
+library(Matrix)
+library(sparsesvd)
+library(glmnet)
 # function to parse html and clean text
 parse_fn <- function(.html){
   read_html(.html) %>%
@@ -59,7 +64,7 @@ data without headers
 # Step 1: Partitioning
 # partition data
 set.seed(102722)
-partitions <- claims %>% initial_split(prop = 0.8)
+partitions <- claims_clean %>% initial_split(prop = 0.8)
 
 # separate DTM from labels
 test_dtm <- testing(partitions) %>%
