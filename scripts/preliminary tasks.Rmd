@@ -61,23 +61,10 @@ claims_clean_headers <- claims_raw %>%
 
 example from class activity
 ```{r}
-# path to activity files on repo
-url <- 'https://raw.githubusercontent.com/pstat197/pstat197a/main/materials/activities/data/'
-
-# load a few functions for the activity
-source(paste(url, 'projection-functions.R', sep = ''))
-
-# read in data
-claims <- paste(url, 'claims-multi-tfidf.csv', sep = '') %>%
-  read_csv()
-
-# preview
-claims
-
 # Step 1: Partitioning
 # partition data
 set.seed(102722)
-partitions <- claims %>% initial_split(prop = 0.8)
+partitions <- claims_df %>% initial_split(prop = 0.8)
 
 # separate DTM from labels
 test_dtm <- testing(partitions) %>%
@@ -94,6 +81,41 @@ train_labels <- training(partitions) %>%
 
 ```{r}
 # Step 2: Projection
+# function
+projection_fn <- function(.dtm, .prop){
+  # coerce feature matrix to sparse
+  dtm_mx <- .dtm %>%
+    as.matrix() %>%
+    as('sparseMatrix')
+  
+  # compute svd
+  svd_out <- sparsesvd(dtm_mx)
+  
+  # select number of projections
+  var_df <- tibble(var = svd_out$d^2) %>%
+    mutate(pc = row_number(),
+           cumulative = cumsum(var)/sum(var))
+  
+  n_pc <- which.min(var_df$cumulative < .prop)
+  
+  # extract loadings
+  loadings <- svd_out$v[, 1:n_pc] %>% as.matrix()
+  
+  # extract scores
+  scores <- (dtm_mx %*% svd_out$v[, 1:n_pc]) %>% as.matrix()
+  
+  # adjust names
+  colnames(loadings) <- colnames(scores) <- paste('pc', 1:n_pc, sep = '')
+  
+  # output
+  out <- list(n_pc = n_pc,
+              var = var_df,
+              projection = loadings,
+              data = as_tibble(scores))
+  
+  return(out)
+}
+
 # find projections based on training data
 proj_out <- projection_fn(.dtm = train_dtm, .prop = 0.7)
 train_dtm_projected <- proj_out$data
