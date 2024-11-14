@@ -89,6 +89,11 @@ projection_fn <- function(.dtm, .prop){
   return(out)
 }
 
+#reproject test data
+reproject_fn <- function(.dtm, .projection_fn_out){
+  as_tibble(as.matrix(.dtm) %*% .projection_fn_out$projection)
+}
+
 ```
 
 # Task 1
@@ -156,6 +161,7 @@ train_labels <- training(partitions) %>%
 PCA with header data
 
 ```{r}
+set.seed(102722)
 # Step 2: Projection
 # find projections based on training data
 proj_out <- projection_fn(.dtm = train_dtm, .prop = 0.7)
@@ -168,6 +174,7 @@ proj_out$n_pc
 fit header data into logistic regressiong
 
 ```{r}
+set.seed(102722)
 # Step 3: Regression
 train <- train_labels %>%
   transmute(bclass = factor(bclass)) %>%
@@ -175,22 +182,35 @@ train <- train_labels %>%
 
 
 fit <- glm(bclass~., data = train, family = binomial)
-summary(fit)
+
 ```
 
 ```{r}
+set.seed(102722)
+#project test data
+test_dtm_projected <- reproject_fn(.dtm = test_dtm, proj_out)
+
+#get predictions
+preds <- predict(fit,
+                 newdata = as.data.frame(test_dtm_projected),
+                 type = 'response')
+
+#test-labels with predictions
+pred_df <- test_labels %>%
+  transmute(bclass = factor(bclass)) %>%
+  bind_cols(pred = as.numeric(preds)) %>%
+  mutate(bclass.pred = factor(pred > 0.5, 
+                              labels = levels(bclass)))
+
 # Evaluate errors on test set
-  class_metrics <- metric_set(sensitivity, 
-                              specificity, 
-                              accuracy,
-                              roc_auc)
-  
-  # Calculate metrics and create kable for each protein vector
-  metrics_result <- test_labels %>%
-    add_predictions(fit, type = 'response') %>%
-    mutate(est = as.factor(pred > 0.5), tr_c = as.factor(class)) %>%
-    class_metrics(estimate = est,
-                  truth = tr_c, .pred = pred,
+class_metrics <- metric_set(sensitivity, 
+                            specificity, 
+                            accuracy,
+                            roc_auc)
+
+# Calculate metrics
+pred_df %>% class_metrics(truth = bclass, 
+                  estimate = bclass.pred, 
+                  pred, 
                   event_level = 'second')
 ```
-
