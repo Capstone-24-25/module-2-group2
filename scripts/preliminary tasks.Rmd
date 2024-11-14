@@ -261,9 +261,43 @@ pred_df1 %>% class_metrics(truth = bclass,
 ```
 
 # Task 2
-## Obtaining bigrams
+
 ```{r}
-headers_tfidf %>%
-  slice_max(tf_idf, n = 2)
+# Tokenize into bigrams
+headers_bigrams <- claims_clean_headers %>%
+  select(.id, bclass, text_clean) %>%
+  unnest_tokens(output = bigram, 
+                input = text_clean, 
+                token = 'ngrams', 
+                n = 2, 
+                stopwords = str_remove_all(stop_words$word, '[[:punct:]]'))
+
+# Count bigrams and compute TF-IDF
+headers_bigrams_tfidf <- headers_bigrams %>%
+  count(.id, bclass, bigram, name = 'n') %>%
+  bind_tf_idf(term = bigram, 
+              document = .id, 
+              n = n) %>%
+  pivot_wider(id_cols = c(.id, bclass),
+              names_from = bigram,
+              values_from = tf_idf,
+              values_fill = 0)
+
+# Partition data
+partitions_bigrams <- headers_bigrams_tfidf %>% inital_split(prop = 0.8)
+
+train_dtm_bigrams <- training(partitions_bigrams) %>%
+  select(-.id, -bclass)
+train_labels_bigrams <- training(partitions_bigrams) %>%
+  select(.id, bclass)
+
+test_dtm_bigrams <- testing(partitions_bigrams) %>%
+  select(-.id, -bclass)
+test_labels_bigrams <- testing(partitions_bigrams) %>%
+  select(.id, bclass)
+
+# PCA projection for bigram data
+proj_out_bigrams <- projection_fn(.dtm = train_dtm_bigrams, .prop = 0.7)
+train_dtm_projected_bigrams <- proj_out_bigrams$data
 ```
 
