@@ -67,6 +67,12 @@ url <- 'https://raw.githubusercontent.com/pstat197/pstat197a/main/materials/acti
 # load a few functions for the activity
 source(paste(url, 'projection-functions.R', sep = ''))
 
+# read in data
+claims <- paste(url, 'claims-multi-tfidf.csv', sep = '') %>%
+  read_csv()
+
+# preview
+claims
 
 # Step 1: Partitioning
 # partition data
