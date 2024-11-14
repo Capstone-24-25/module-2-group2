@@ -299,7 +299,7 @@ test_labels_bigrams <- testing(partitions_bigrams) %>%
 
 ```{r}
 # PCA projection for bigram data
-proj_out_bigrams <- projection_fn(.dtm = train_dtm_bigrams, .prop = 0.7)
+proj_out_bigrams <- sparsesvd(.dtm = train_dtm_bigrams, .prop = 0.7)
 train_dtm_projected_bigrams <- proj_out_bigrams$data
 
 # how many components were used?
