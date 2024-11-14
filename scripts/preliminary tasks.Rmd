@@ -299,5 +299,8 @@ test_labels_bigrams <- testing(partitions_bigrams) %>%
 # PCA projection for bigram data
 proj_out_bigrams <- projection_fn(.dtm = train_dtm_bigrams, .prop = 0.7)
 train_dtm_projected_bigrams <- proj_out_bigrams$data
+
+# how many components were used?
+proj_out_bigrams$n_pc
 ```
 
