@@ -75,9 +75,9 @@ reproject_fn <- function(.dtm, .projection_fn_out){
 add headers to data
 
 ```{r}
-#claims_clean_headers <- claims_raw %>%
-  #parse_data()
-#save(claims_clean_headers, file = '../data/claims-clean-headers.RData')
+claims_clean_headers <- claims_raw %>%
+  parse_data()
+save(claims_clean_headers, file = '../data/claims-clean-headers.RData')
 ```
 
 change data with headers into tf-idf
@@ -141,7 +141,7 @@ train_dtm_projected <- proj_out$data
 proj_out$n_pc
 ```
 
-fit header data into logistic regressiong
+fit header data into logistic regression
 
 ```{r}
 set.seed(102722)
