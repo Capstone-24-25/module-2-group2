@@ -278,6 +278,7 @@ headers_bigrams_tfidf <- headers_bigrams %>%
   bind_tf_idf(term = bigram, 
               document = .id, 
               n = n) %>%
+  filter(n>=5) %>% 
   pivot_wider(id_cols = c(.id, bclass),
               names_from = bigram,
               values_from = tf_idf,
@@ -299,10 +300,11 @@ test_labels_bigrams <- testing(partitions_bigrams) %>%
 
 ```{r}
 # PCA projection for bigram data
-train_dtm_bigrams_sparse <- as(train_dtm_bigrams, "sparseMatrix")
-svd_out_bigrams <- sparsesvd(train_dtm_bigrams_sparse, rank=100)
+train_dtm_bigrams_sparse <- train_dtm_bigrams %>%
+  as.matrix() %>%
+  as('sparseMatrix') 
+svd_out_bigrams <- sparsesvd(train_dtm_bigrams_sparse, rank=153)
 
-# how many components were used?
-proj_out_bigrams$n_pc
+#projected data frame
+train_dtm_projected <- svd_out_bigrams$u %*% diag(svd_out_bigrams$d)
 ```
-
