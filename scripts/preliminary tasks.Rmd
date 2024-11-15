@@ -314,7 +314,7 @@ train2 <- train_labels_bigrams %>%
   bind_cols(train_dtm_projected)
 
 
-fit1 <- glm(bclass~., data = train2, family = binomial)
+fit2 <- glm(bclass~., data = train2, family = binomial)
 
 # re-projection
 reproject_fn <- function(.dtm, train_projected) {
@@ -327,7 +327,7 @@ reproject_fn <- function(.dtm, train_projected) {
 test_dtm_projected2 <- reproject_fn(.dtm = test_dtm_bigrams, train_dtm_projected)
 
 #get predictions
-preds2 <- predict(fit1,
+preds2 <- predict(fit2,
                  newdata = as.data.frame(test_dtm_projected2),
                  type = 'response')
 
