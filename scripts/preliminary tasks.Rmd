@@ -332,9 +332,9 @@ preds2 <- predict(fit2,
                  type = 'response')
 
 #test-labels with predictions
-pred_df2 <- test_labels1 %>%
+pred_df2 <- test_labels_bigrams %>%
   transmute(bclass = factor(bclass)) %>%
-  bind_cols(pred = as.numeric(preds1)) %>%
+  bind_cols(pred = as.numeric(preds2)) %>%
   mutate(bclass.pred = factor(pred > 0.5, 
                               labels = levels(bclass)))
 ```
