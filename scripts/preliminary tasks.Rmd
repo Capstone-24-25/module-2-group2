@@ -305,27 +305,26 @@ first logistic regression
 
 ```{r}
 set.seed(102722)
-# PCA projection for bigram data
+# PCA projection for  training bigram data
 train_dtm_bigrams_sparse <- train_dtm_bigrams %>%
   as.matrix() %>%
   as('sparseMatrix') 
 svd_out_bigrams <- sparsesvd(train_dtm_bigrams_sparse, rank=173)
 
-#projected data frame
+#Training PCs data frame
 train_dtm_projected2 <- svd_out_bigrams$u %*% diag(svd_out_bigrams$d)
 
 # assign column names
 colnames(train_dtm_projected2) <- paste0("PC", 1:ncol(train_dtm_projected2))
 
-#regression
+#regression with training data
 train2 <- train_labels_bigrams %>%
   transmute(bclass = factor(bclass)) %>%
   bind_cols(train_dtm_projected2)
 
-
 fit2 <- glm(bclass~., data = train2, family = binomial)
 
-# re-projection
+# re-projection of test data
 reproject_fn1 <- function(.dtm, train_projected) {
   .dtm_sparse <- as(.dtm, "sparseMatrix")
   test_projected <- as.matrix(.dtm_sparse %*% train_projected$v %*% diag(1 / train_projected$d))
@@ -334,23 +333,55 @@ reproject_fn1 <- function(.dtm, train_projected) {
 }
 
 
-#project test data
+#Test PCs data frame
 test_dtm_projected2 <- reproject_fn1(.dtm = test_dtm_bigrams, svd_out_bigrams)
 
-#get predictions
-preds2 <- predict(fit2,
-                 newdata = as.data.frame(test_dtm_projected2),
-                 type = 'response')
+```
 
-#test-labels with predictions
-pred_df2 <- test_labels_bigrams %>%
+prob into log-odds
+
+```{r}
+#put predicted probabilities into training dataset
+train_bigram_preds <- train2 %>% 
+  bind_cols(pred = as.numeric(predict(fit2, type = 'response'))) %>%
+  mutate(log_odds = log(pred / (1 - pred)), #pred into log-odds
+    bclass.pred = factor(pred > 0.5, 
+                              labels = levels(bclass)))
+```
+
+second logistic regression
+
+```{r}
+#regression on bclass with log-odds and 50 PC
+train3 <- train_bigram_preds %>% 
+  select(bclass, log_odds, PC1:PC50)
+
+fit3 <- glm(bclass~., data = train3, family = binomial)
+
+```
+
+get testing data metrics
+
+```{r}
+#take projected test data and input log-odds
+test <- cbind(pred_df2, test_dtm_projected2) %>%
+  mutate(log_odds = log(pred / (1 - pred)), #pred into log-odds
+    bclass.pred = factor(pred > 0.5, 
+                              labels = levels(bclass)))%>% 
+  select(bclass, log_odds, PC1:PC50)
+
+#add predictions on test data
+test_pred <-predict(fit3,
+                 newdata = as.data.frame(test),
+                 type = 'response')
+test_pred_df <- test %>% 
   transmute(bclass = factor(bclass)) %>%
-  bind_cols(pred = as.numeric(preds2)) %>%
+  bind_cols(pred = as.numeric(test_pred))%>%
   mutate(bclass.pred = factor(pred > 0.5, 
                               labels = levels(bclass)))
 
-# Calculate metrics
-pred_df2 %>% class_metrics(truth = bclass, 
+#metrics
+test_pred_df %>% class_metrics(truth = bclass, 
                   estimate = bclass.pred, 
                   pred, 
                   event_level = 'second')
