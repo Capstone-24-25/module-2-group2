@@ -75,9 +75,9 @@ reproject_fn <- function(.dtm, .projection_fn_out){
 add headers to data
 
 ```{r}
-claims_clean_headers <- claims_raw %>%
-  parse_data()
-save(claims_clean_headers, file = '../data/claims-clean-headers.RData')
+#claims_clean_headers <- claims_raw %>%
+  #parse_data()
+#save(claims_clean_headers, file = '../data/claims-clean-headers.RData')
 ```
 
 change data with headers into tf-idf
@@ -103,8 +103,6 @@ headers_tfidf <- headers_clean %>%
               names_from = 'token.lem',
               values_from = 'tf_idf',
               values_fill = 0)
-
-
 ```
 
 partition data
@@ -258,11 +256,16 @@ pred_df1 %>% class_metrics(truth = bclass,
                   estimate = bclass.pred, 
                   pred, 
                   event_level = 'second')
+
 ```
 
 # Task 2
 
+split data
+
 ```{r}
+set.seed(102722)
+
 # Tokenize into bigrams
 headers_bigrams <- claims_clean_headers %>%
   select(.id, bclass, text_clean) %>%
@@ -298,37 +301,41 @@ test_labels_bigrams <- testing(partitions_bigrams) %>%
   select(.id, bclass)
 ```
 
+first logistic regression
+
 ```{r}
+set.seed(102722)
 # PCA projection for bigram data
 train_dtm_bigrams_sparse <- train_dtm_bigrams %>%
   as.matrix() %>%
   as('sparseMatrix') 
-svd_out_bigrams <- sparsesvd(train_dtm_bigrams_sparse, rank=153)
+svd_out_bigrams <- sparsesvd(train_dtm_bigrams_sparse, rank=173)
 
 #projected data frame
-train_dtm_projected <- svd_out_bigrams$u %*% diag(svd_out_bigrams$d)
+train_dtm_projected2 <- svd_out_bigrams$u %*% diag(svd_out_bigrams$d)
 
 # assign column names
-colnames(train_dtm_projected) <- paste0("PC", 1:ncol(train_dtm_projected))
+colnames(train_dtm_projected2) <- paste0("PC", 1:ncol(train_dtm_projected2))
 
 #regression
 train2 <- train_labels_bigrams %>%
   transmute(bclass = factor(bclass)) %>%
-  bind_cols(train_dtm_projected)
+  bind_cols(train_dtm_projected2)
 
 
 fit2 <- glm(bclass~., data = train2, family = binomial)
 
 # re-projection
-reproject_fn <- function(.dtm, train_projected) {
+reproject_fn1 <- function(.dtm, train_projected) {
   .dtm_sparse <- as(.dtm, "sparseMatrix")
-  test_projected <- as.matrix(.dtm_sparse %*% svd_out_bigrams$v %*% diag(1 / svd_out_bigrams$d))
+  test_projected <- as.matrix(.dtm_sparse %*% train_projected$v %*% diag(1 / train_projected$d))
   colnames(test_projected) <- paste0("PC", 1:ncol(test_projected))
   return(test_projected)
 }
 
+
 #project test data
-test_dtm_projected2 <- reproject_fn(.dtm = test_dtm_bigrams, train_dtm_projected)
+test_dtm_projected2 <- reproject_fn1(.dtm = test_dtm_bigrams, svd_out_bigrams)
 
 #get predictions
 preds2 <- predict(fit2,
