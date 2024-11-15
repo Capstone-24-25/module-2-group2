@@ -307,4 +307,34 @@ svd_out_bigrams <- sparsesvd(train_dtm_bigrams_sparse, rank=153)
 
 #projected data frame
 train_dtm_projected <- svd_out_bigrams$u %*% diag(svd_out_bigrams$d)
+
+#regression
+train2 <- train_labels_bigrams %>%
+  transmute(bclass = factor(bclass)) %>%
+  bind_cols(train_dtm_projected)
+
+
+fit1 <- glm(bclass~., data = train1, family = binomial)
+
+# re-projection
+reproject_fn <- function(.dtm, train_projected) {
+  .dtm_sparse <- as(.dtm, "sparseMatrix")
+  test_projected <- as.matrix(.dtm_sparse %*% svd_out_bigrams$v %*% diag(1 / svd_out_bigrams$d))
+  return(test_projected)
+}
+
+#project test data
+test_dtm_projected2 <- reproject_fn(.dtm = test_dtm_bigrams, train_dtm_projected)
+
+#get predictions
+preds2 <- predict(fit1,
+                 newdata = as.data.frame(test_dtm_projected2),
+                 type = 'response')
+
+#test-labels with predictions
+pred_df2 <- test_labels1 %>%
+  transmute(bclass = factor(bclass)) %>%
+  bind_cols(pred = as.numeric(preds1)) %>%
+  mutate(bclass.pred = factor(pred > 0.5, 
+                              labels = levels(bclass)))
 ```
