@@ -1,16 +1,32 @@
 ---
-title: "Summary of exploratory tasks"
-author: 'YOUR NAMES HERE'
-date: today
+title: "Summary of Exploratory Tasks"
+author: 'Valerie De La Fuente, Mai Uyen Thanh Huynh, Casey Alexander Linden, Nazhah Mir'
+date: 11/20/24
 ---
 
 ### HTML scraping
 
 Does including header content improve predictions? Answer the question and provide quantitative evidence supporting your answer.
 
+```{r}
+load("../data/claims_clean_headers_metrics.RData")
+claims_clean_headers_metrics
+```
+
+```{r}
+load("../data/claims_clean_no_headers_metrics.RData")
+claims_clean_no_headers_metrics
+```
+
+
 ### Bigrams
 
 Do bigrams capture additional information relevant to the classification of interest? Answer the question, **briefly** describe what analysis you conducted to arrive at your answer, and provide quantitative evidence supporting your answer.
+
+```{r}
+load("../data/claims_clean_bigrams_metrics.RData")
+claims_clean_bigrams_metrics
+```
 
 ### Neural net
 

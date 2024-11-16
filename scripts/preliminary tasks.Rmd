@@ -1,6 +1,8 @@
 ---
 title: "preliminary taks"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 date: "2024-11-14"
 ---
 
@@ -176,12 +178,13 @@ class_metrics <- metric_set(sensitivity,
                             roc_auc)
 
 # Calculate metrics
-pred_df %>% class_metrics(truth = bclass, 
+claims_clean_headers_metrics <- pred_df %>% class_metrics(truth = bclass, 
                   estimate = bclass.pred, 
                   pred, 
                   event_level = 'second')
+claims_clean_headers_metrics
 
-#save(pred_df, file = '../data/claims-clean-headers-metrics.RData')
+#save(claims_clean_headers_metrics, file = '../data/claims_clean_headers_metrics.RData')
 ```
 
 ## Data without Headers
@@ -266,12 +269,13 @@ pred_df1 <- test_labels1 %>%
                               labels = levels(bclass)))
 
 # Calculate metrics
-pred_df1 %>% class_metrics(truth = bclass, 
+claims_clean_no_headers_metrics <-pred_df1 %>% class_metrics(truth = bclass, 
                   estimate = bclass.pred, 
                   pred, 
                   event_level = 'second')
 
-#save(pred_df1, file = '../data/claims-clean-no-headers-metrics.RData')
+claims_clean_no_headers_metrics
+#save(claims_clean_no_headers_metrics, file = '../data/claims_clean_no_headers_metrics.RData')
 ```
 
 # Task 2
@@ -409,10 +413,12 @@ test_pred_df <- test %>%
                               labels = levels(bclass)))
 
 # Metrics
-test_pred_df %>% class_metrics(truth = bclass, 
+claims_clean_bigrams_metrics <- test_pred_df %>% class_metrics(truth = bclass, 
                   estimate = bclass.pred, 
                   pred, 
                   event_level = 'second')
 
-#save(test_pred_df, file = '../data/claims-clean-bigrams-metrics.RData')
+claims_clean_bigrams_metrics
+
+#save(claims_clean_bigrams_metrics, file = '../data/claims_clean_bigrams_metrics.RData')
 ```
