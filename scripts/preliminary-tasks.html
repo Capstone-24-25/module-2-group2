@@ -429,7 +429,7 @@ library(tidyverse)</code></pre>
 ## ✖ dplyr::lag()         masks stats::lag()
 ## ✖ yardstick::spec()    masks readr::spec()
 ## ✖ recipes::step()      masks stats::step()
-## • Search for functions across packages at https://www.tidymodels.org/find/</code></pre>
+## • Use tidymodels_prefer() to resolve common conflicts.</code></pre>
 <pre class="r"><code>library(modelr)</code></pre>
 <pre><code>## 
 ## Attaching package: &#39;modelr&#39;
@@ -595,10 +595,11 @@ class_metrics &lt;- metric_set(sensitivity,
                             roc_auc)
 
 # Calculate metrics
-pred_df %&gt;% class_metrics(truth = bclass, 
+claims_clean_headers_metrics &lt;- pred_df %&gt;% class_metrics(truth = bclass, 
                   estimate = bclass.pred, 
                   pred, 
-                  event_level = &#39;second&#39;)</code></pre>
+                  event_level = &#39;second&#39;)
+claims_clean_headers_metrics</code></pre>
 <pre><code>## # A tibble: 4 × 3
 ##   .metric     .estimator .estimate
 ##   &lt;chr&gt;       &lt;chr&gt;          &lt;dbl&gt;
@@ -606,6 +607,7 @@ pred_df %&gt;% class_metrics(truth = bclass,
 ## 2 specificity binary         0.744
 ## 3 accuracy    binary         0.776
 ## 4 roc_auc     binary         0.871</code></pre>
+<pre class="r"><code>#save(claims_clean_headers_metrics, file = &#39;../data/claims_clean_headers_metrics.RData&#39;)</code></pre>
 </div>
 </div>
 <div id="data-without-headers" class="section level2">
@@ -688,10 +690,12 @@ pred_df1 &lt;- test_labels1 %&gt;%
                               labels = levels(bclass)))
 
 # Calculate metrics
-pred_df1 %&gt;% class_metrics(truth = bclass, 
+claims_clean_no_headers_metrics &lt;-pred_df1 %&gt;% class_metrics(truth = bclass, 
                   estimate = bclass.pred, 
                   pred, 
-                  event_level = &#39;second&#39;)</code></pre>
+                  event_level = &#39;second&#39;)
+
+claims_clean_no_headers_metrics</code></pre>
 <pre><code>## # A tibble: 4 × 3
 ##   .metric     .estimator .estimate
 ##   &lt;chr&gt;       &lt;chr&gt;          &lt;dbl&gt;
@@ -699,6 +703,7 @@ pred_df1 %&gt;% class_metrics(truth = bclass,
 ## 2 specificity binary         0.786
 ## 3 accuracy    binary         0.820
 ## 4 roc_auc     binary         0.861</code></pre>
+<pre class="r"><code>#save(claims_clean_no_headers_metrics, file = &#39;../data/claims_clean_no_headers_metrics.RData&#39;)</code></pre>
 </div>
 </div>
 </div>
@@ -834,10 +839,12 @@ test_pred_df &lt;- test %&gt;%
                               labels = levels(bclass)))
 
 # Metrics
-test_pred_df %&gt;% class_metrics(truth = bclass, 
+claims_clean_bigrams_metrics &lt;- test_pred_df %&gt;% class_metrics(truth = bclass, 
                   estimate = bclass.pred, 
                   pred, 
-                  event_level = &#39;second&#39;)</code></pre>
+                  event_level = &#39;second&#39;)
+
+claims_clean_bigrams_metrics</code></pre>
 <pre><code>## # A tibble: 4 × 3
 ##   .metric     .estimator .estimate
 ##   &lt;chr&gt;       &lt;chr&gt;          &lt;dbl&gt;
@@ -845,6 +852,7 @@ test_pred_df %&gt;% class_metrics(truth = bclass,
 ## 2 specificity binary         0.149
 ## 3 accuracy    binary         0.565
 ## 4 roc_auc     binary         0.613</code></pre>
+<pre class="r"><code>#save(claims_clean_bigrams_metrics, file = &#39;../data/claims_clean_bigrams_metrics.RData&#39;)</code></pre>
 </div>
 </div>
 
