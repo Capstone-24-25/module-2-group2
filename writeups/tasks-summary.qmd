@@ -3,10 +3,14 @@ title: "Summary of Exploratory Tasks"
 author: 'Valerie De La Fuente, Mai Uyen Thanh Huynh, Casey Alexander Linden, Nazhah Mir'
 date: 11/20/24
 ---
+## Introduction
+This report summarizes the methodology and results of incorporating header information and bigram tokenization in webpage classificaation based on scraping text content.
 
 ### HTML scraping
 
 Does including header content improve predictions? Answer the question and provide quantitative evidence supporting your answer.
+
+### Methodology
 
 ```{r}
 load("../data/claims_clean_headers_metrics.RData")
@@ -28,14 +32,3 @@ load("../data/claims_clean_bigrams_metrics.RData")
 claims_clean_bigrams_metrics
 ```
 
-### Neural net
-
-Summarize the neural network model you trained by desribing:
-
--   architecture
-
--   optimization and loss
-
--   training epochs
-
--   predictive accuracy
