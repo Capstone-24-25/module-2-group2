@@ -1,24 +1,28 @@
 ---
 title: "Summary of Exploratory Tasks"
-author: 'Valerie De La Fuente, Mai Uyen Thanh Huynh, Casey Alexander Linden, Nazhah Mir'
+author: 'Valerie De La Fuente, Mai Uyen Huynh, Casey Alexander Linden, Nazhah Mir'
 date: 11/20/24
 ---
+
 ## Introduction
+
 This report summarizes the methodology and results of incorporating header information and bigram tokenization in webpage classification based on scraping text content.
 
 ## HTML scraping
 
 ### Methodology
 
-The data with headers, `claims-clean-headers`, is transformed into a TF-IDF to identify words that are significant to a particular webpage. Principal component analysis is performed on the training data matrix to project it onto a lower-dimensional subspace. 211 principal components were used in the projection. Then, a logistic regression model is trained to predict the binary class based on the principal component analysis projections. The test data matrix is projected into the same lower-dimensional subspace, and predictions for the test set are generated using the logistic regression model. 
+The data with headers, `claims-clean-headers`, is transformed into a TF-IDF to identify words that are significant to a particular webpage. Principal component analysis is performed on the training data matrix to project it onto a lower-dimensional subspace. 211 principal components were used in the projection. Then, a logistic regression model is trained to predict the binary class based on the principal component analysis projections. The test data matrix is projected into the same lower-dimensional subspace, and predictions for the test set are generated using the logistic regression model.
 
 Class metrics are calculated on the test predictions and the output is as follows:
+
 ```{r}
 load("../data/claims_clean_headers_metrics.RData")
 claims_clean_headers_metrics
 ```
 
 The same process is applied to the data without headers, `claims-clean`, and the output from the class metrics is as follows:
+
 ```{r}
 load("../data/claims_clean_no_headers_metrics.RData")
 claims_clean_no_headers_metrics
@@ -28,19 +32,23 @@ claims_clean_no_headers_metrics
 
 The data with headers has a sensitivity estimate of 0.8044 and a specificity estimate of 0.7436, while the data without headers has a sensitivity estimate of 0.8468 and a specificity estimate of 0.7861. This indicates that the data with headers correctly identifies true positives and true negatives at a lower rate than the data without headers. The accuracy estimate of the predictions of the data with headers is 0.7761 and the accuracy estimate of the data without headers is 0.8202, suggesting that including header content did not improve predictions. Surprisingly, the data with headers has a ROC AUC estimate of 0.8705, around 0.01 higher than that of the data without headers. This contrast illustrates that the data with headers may have higher discriminatory ability, while the data without headers has better classification performance in terms of final predictions.
 
+A reasoning for this result could be that including the headers added unnecessary information about the webpages that are not relevant to classifying the webpage. For example, including headers in the HTML scraping could result in headers from webpage navigation, words like "home", "login", or "filter", that provide no context to the actual content of the webpage. Having this irrelevant information could result in the model having lower accuracy.
+
 ## Bigrams
 
 Do bigrams capture additional information relevant to the classification of interest? Answer the question, **briefly** describe what analysis you conducted to arrive at your answer, and provide quantitative evidence supporting your answer.
 
 ### Methodology
 
-The data with headers, `claims-clean-headers`, is tokenized into bigrams, and converted into a TF-IDF. Principal component analysis is performed on the data with headers and bigrams. Then, the training data undergoes an initial logistic regression model fit, where its predicted probabilities are extracted and transformed into log-odds values. The top 50 principal components and the log-odds are used to fit a second logistic regression model. 
+The data with headers, `claims-clean-headers`, is tokenized into bigrams, and converted into a TF-IDF. Principal component analysis is performed on the data with headers and bigrams. Then, the training data undergoes an initial logistic regression model fit, where its predicted probabilities are extracted and transformed into log-odds values. The first 50 principal components and the log-odds are used to fit a second logistic regression model.
 
-Class metrics are calculated on the test predictions and the output is as follows:
+Class metrics are calculated on the test predictions from the second logistic regression model and the output is as follows:
+
 ```{r}
 load("../data/claims_clean_bigrams_metrics.RData")
 claims_clean_bigrams_metrics
 ```
 
 ### Results
-The bigram data with headers has a sensitivity estimate of 0.9691 and a specificity estimate of 0.1489, indicating that the mdoel is very good at correctly identifying positive cases but cannot accurately identify negative cases. Contrastly, the unigram data with headers has a sensitivity estimate of 0.8044 and a specificity estimate of 0.7436. The unigram with headers is more consistent in simultaneously identifying positive and negative cases. The bigram data with headers has an accuracy estimate of 0.5654, while the unigram data with headers has an accuracy estimate of 0.7762, indicating that the unigram data with headers has better predicting abilities.The bigram data with headers has an ROC AUC estimate of 0.6131827 and the unigram data with headers has an ROC AUC estimate of 0.8705. This contrast suggests that unigram data with headers is better at distinguishing positive and negative cases. Overall, the low performance of the bigram model indicates that bigrams do not capture any additional information relavant to the classification of interest.
+
+The bigram data with headers has a sensitivity estimate of 0.9691 and a specificity estimate of 0.1489, indicating that the model is very good at correctly identifying positive cases but cannot accurately identify negative cases. Contrarily, the unigram data with headers has a sensitivity estimate of 0.8044 and a specificity estimate of 0.7436. The unigram with headers is more consistent in simultaneously identifying positive and negative cases. The bigram data with headers has an accuracy estimate of 0.5654, while the unigram data with headers has an accuracy estimate of 0.7762, indicating that the unigram data with headers has better predicting abilities.The bigram data with headers has an ROC AUC estimate of 0.6131827 and the unigram data with headers has an ROC AUC estimate of 0.8705. This contrast suggests that unigram data with headers is better at distinguishing positive and negative cases. Overall, the low performance of the bigram model indicates that bigrams do not capture any additional information relevant to the classification of interest.

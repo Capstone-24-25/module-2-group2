@@ -397,9 +397,7 @@ pred_df2 <- test_labels_bigrams %>%
 
 # Take projected test data and input log-odds
 test <- cbind(pred_df2, test_dtm_projected2) %>%
-  mutate(log_odds = log(pred / (1 - pred)), #pred into log-odds
-    bclass.pred = factor(pred > 0.5, 
-                              labels = levels(bclass)))%>% 
+  mutate(log_odds = log(pred / (1 - pred)))%>% 
   select(bclass, log_odds, PC1:PC50)
 
 # Add predictions on test data
