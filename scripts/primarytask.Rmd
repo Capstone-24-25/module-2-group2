@@ -1,0 +1,286 @@
+---
+title: "primary task"
+output: pdf_document
+date: "2024-11-18"
+---
+```{r}
+library(rvest)
+library(tidyverse)
+require(tidytext)
+require(textstem)
+require(rvest)
+require(qdapRegex)
+require(stopwords)
+require(tokenizers)
+library(tidymodels)
+library(modelr)
+library(Matrix)
+library(sparsesvd)
+library(glmnet)
+library(e1071) # SVM library
+library(yardstick)
+```
+
+
+```{r}
+# Loading the Data
+source('preprocessing.R')
+load("../data/claims-raw.RData")
+load("../data/claims-clean-example.RData")
+load('../data/claims-clean-headers.RData')
+```
+
+### Tokenize into Bigrams
+```{r}
+# Set seed for reproducibility
+set.seed(1234)
+# Tokenize into bigrams
+headers_bigrams <- claims_clean_headers %>% 
+  select(.id, bclass, mclass, text_clean) %>% 
+  unnest_tokens(output = bigram, 
+                input = text_clean, 
+                token = 'ngrams', 
+                n   = 2, 
+                stopwords = str_remove_all(stop_words$word,'[[:punct:]]'))
+
+```
+
+### Change Bigram Data into a TF-IDF
+```{r}
+# Count bigrams and compute TF-IDF
+headers_bigrams_tfidf <- headers_bigrams %>% 
+  count(.id, bclass, mclass, bigram, name = 'n') %>% 
+  bind_tf_idf(term = bigram,
+              document = .id, 
+              n = n) %>% 
+  filter(n>=5) %>%
+  pivot_wider(id_cols = c(.id, bclass, mclass), 
+              names_from = bigram,
+              values_from = tf_idf,
+              values_fill = 0)
+```
+
+### Partition the Data
+```{r}
+# Partition data
+partitions_bigrams <- headers_bigrams_tfidf %>% initial_split(prop = 0.8)
+
+train_dtm_bigrams <- training(partitions_bigrams) %>% 
+  select(-.id, -bclass, -mclass)
+train_labels_bigrams <- training(partitions_bigrams) %>% 
+  select(.id, bclass, mclass)
+
+test_dtm_bigrams <- testing(partitions_bigrams) %>% 
+  select(-.id, -bclass, -mclass)
+test_labels_bigrams <- testing(partitions_bigrams) %>% 
+  select(.id, bclass, mclass)
+```
+
+### Dimensionality Reduction of training and testing splits
+```{r}
+# PCA projection for training bigram data
+train_dtm_bigrams_sparse <- train_dtm_bigrams %>% 
+  as.matrix() %>%
+  as('sparseMatrix')
+svd_out_bigrams <- sparsesvd(train_dtm_bigrams_sparse, rank=173) 
+
+# Training PCs data frame
+train_dtm_projected2 <- svd_out_bigrams$u %*% diag(svd_out_bigrams$d) 
+
+# Assign column names
+colnames(train_dtm_projected2) <- paste0("PC", 1:ncol(train_dtm_projected2))
+```
+
+```{r}
+# Function to reproject test data into the same space as training data
+reproject_fn1 <- function(.dtm, svd_out) {
+  # Convert test data into a sparse matrix
+  .dtm_sparse <- as(.dtm, "sparseMatrix")
+  
+  # Reproject test data into the same space using SVD's V and D components
+  test_projected <- as.matrix(.dtm_sparse %*% svd_out$v %*% diag(1 / svd_out$d))
+  
+  # Assign column names for principal components
+  colnames(test_projected) <- paste0("PC", 1:ncol(test_projected))
+  
+  return(test_projected)
+}
+
+# Apply function to project test data
+test_dtm_projected2 <- reproject_fn1(.dtm = test_dtm_bigrams, svd_out = svd_out_bigrams)
+
+```
+
+Test data is now represented in the same PCA-transformed space as the training data.
+
+## Train the Binary SVM Model
+```{r}
+set.seed(12345)
+# Prepare training data
+train_data <- cbind(train_dtm_projected2, bclass =
+                      train_labels_bigrams$bclass)
+
+# Train the binary SVM model
+svm_model_binary <- svm(bclass ~ ., data = train_data, 
+                        kernel = "linear", 
+                        type = "C-classification", 
+                        cost = 1, 
+                        scale = TRUE,
+                        probabilitiy = TRUE)
+
+# Summary of the model
+summary(svm_model_binary)
+```
+
+```{r}
+# Make predictions on the test data
+test_pred_binary <- predict(svm_model_binary, newdata = test_data, type='response')
+
+# Combine predictions with actual values
+test_pred_df <- data.frame(.id = test_labels_bigrams$.id,
+                           bclass.pred = test_pred_binary, 
+                           bclass.true = test_labels_bigrams$bclass)
+
+class_metrics <- metric_set(sensitivity, 
+                            specificity,
+                            accuracy)
+
+# Mapping numeric predictions to factor levels
+levels_bclass <- c("N/A: No relevant content.", "Relevant claim content")
+
+# Convert predicted values (1 and 2) into the same factor levels
+test_pred_df$bclass.pred <- factor(test_pred_df$bclass.pred, 
+                                   levels = c(1, 2), 
+                                   labels = levels_bclass)
+
+# Ensure bclass.true is a factor with the same levels
+test_pred_df$bclass.true <- factor(test_pred_df$bclass.true, 
+                                   levels = levels_bclass)
+
+# Use class_metrics to calculate the metrics
+binary_bigrams_metrics <- test_pred_df %>% 
+  class_metrics(truth = bclass.true, 
+                estimate = bclass.pred,
+                pred,
+                event_level = 'second')
+
+# Display the metrics
+binary_bigrams_metrics
+```
+
+
+## Train the Multi-Class SVM Model
+```{r}
+# Train the multi-class SVM model
+set.seed(12345)
+
+# Prepare training data
+train_data_multi <- cbind(train_dtm_projected2, mclass =
+                      train_labels_bigrams$mclass)
+
+# Train the binary SVM model
+svm_model_multi <- svm(mclass ~ ., data = train_data_multi, 
+                        kernel = "linear", 
+                        type = "C-classification", 
+                        cost = 1, 
+                        scale = TRUE,
+                        probabilitiy = TRUE)
+
+# Summary of the model
+summary(svm_model_multi)
+```
+
+
+```{r}
+test_data <- cbind(test_dtm_projected2, mclass = test_labels_bigrams$mclass)
+levels(test_labels_bigrams$mclass)
+# Make predictions on the test data
+test_pred_multi <- predict(svm_model_multi, newdata = test_data, type='response')
+
+# Combine predictions with actual values
+test_pred_multi_df <- data.frame(.id = test_labels_bigrams$.id,
+                           mclass.pred = test_pred_multi, 
+                           mclass.true = test_labels_bigrams$mclass)
+
+class_metrics <- metric_set(sensitivity, 
+                            specificity,
+                            accuracy)
+
+# Mapping numeric predictions to factor levels
+levels_mclass <- c("N/A: No relevant content.", "Physical Activity",
+                   "Possible Fatality", "Potentially unlawful activity",
+                   "Other claim content")
+
+# Convert predicted values (1,2,3,4,5) into the same factor levels
+test_pred_multi_df$mclass.pred <- factor(test_pred_multi_df$mclass.pred, 
+                                   levels = c(1, 2, 3, 4, 5), 
+                                   labels = levels_mclass)
+
+# Ensure bclass.true is a factor with the same levels
+test_pred_multi_df$mclass.true <- factor(test_pred_multi_df$mclass.true, 
+                                   levels = levels_mclass)
+
+# Use class_metrics to calculate the metrics
+multi_bigrams_metrics <- test_pred_multi_df %>% 
+  class_metrics(truth = mclass.true, 
+                estimate = mclass.pred)
+
+# Display the metrics
+multi_bigrams_metrics
+```
+## Save the models
+```{r}
+# Save the binary SVM model
+save(svm_model_binary, file = "../data/svm_model_binary.RData")
+
+# Save the multiclass SVM model
+save(svm_model_multi, file = "../data/svm_model_multi.RData")
+```
+
+## Make predictions on test data
+```{r}
+# Predictions for binary classification model
+bclass_pred <- predict(svm_model_binary, newdata = test_dtm_projected2, type = "response")
+
+# Predictions for multiclass classification model
+mclass_pred <- predict(svm_model_multi, newdata = test_dtm_projected2, type = "response")
+
+```
+
+## Format predictions
+```{r}
+# Define the levels of your binary class labels
+levels_bclass <- c("N/A: No relevant content.", "Relevant claim content")
+
+# Check and map numeric predictions to factor levels for binary classification
+bclass_pred <- factor(bclass_pred, levels = c(1, 2), labels = levels_bclass)
+
+# Define the levels of your multiclass labels
+levels_mclass <- c("N/A: No relevant content.", "Physical Activity", "Possible Fatality", "Potentially unlawful activity", "Other claim content")  
+
+# Check and map numeric predictions to factor levels for multiclass classification
+mclass_pred <- factor(mclass_pred, levels = 1:5, labels = levels_mclass)
+```
+
+
+```{r}
+# Create predictions data frame
+pred_df <- data.frame(
+  .id = test_labels_bigrams$.id,  # Use .id from the test labels
+  bclass.pred = factor(bclass_pred, levels = c("N/A: No relevant content.", "Relevant claim content")),  # Binary class predictions
+  mclass.pred = factor(mclass_pred, levels = c("N/A: No relevant content.", "Physical Activity", "Possible Fatality", "Potentially unlawful activity", "Other claim content"))  
+)
+
+save(pred_df, file = "../data/pred_df.RData")
+
+```
+
+
+
+
+
+
+
+
+
+
