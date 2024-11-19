@@ -233,14 +233,48 @@ pred_tbl <- table(pull(test_labels_unigrams, mclass), pred_class)
 
 pred_tbl
 ```
+### Calculate accuracy metrics
+```{r}
+# Ensure labels in the confusion matrix are aligned
+true_labels <- factor(pull(test_labels_unigrams, mclass), levels = levels(test_labels_unigrams$mclass))
+predicted_labels <- factor(pred_class, levels = levels(test_labels_unigrams$mclass))
+
+# Create confusion matrix
+pred_tbl <- table(true_labels, predicted_labels)
+
+# Calculate accuracy
+accuracy <- sum(diag(pred_tbl)) / sum(pred_tbl)
+print(paste("Accuracy:", round(accuracy, 4)))
+
+# Calculate precision per class
+precision <- diag(pred_tbl) / rowSums(pred_tbl)
+
+# Calculate recall (sensitivity) per class
+recall <- diag(pred_tbl) / colSums(pred_tbl)
+
+# Calculate F1 score per class
+f1_score <- 2 * (precision * recall) / (precision + recall)
+
+# Macro-averaged Precision, Recall, and F1 Score
+## unweighted mean of precision, recall, and F1 score across all classes
+
+macro_precision <- mean(precision, na.rm = TRUE)
+macro_recall <- mean(recall, na.rm = TRUE)
+macro_f1 <- mean(f1_score, na.rm = TRUE)
+
+print(paste("Macro Precision:", round(macro_precision, 4)))
+print(paste("Macro Recall:", round(macro_recall, 4)))
+print(paste("Macro F1 Score:", round(macro_f1, 4)))
+```
+
 
 ### Save the models
 ```{r}
 # Save the logistic regression binary model
-save(log_reg_binary, file = "../data/log_reg_binary.RData")
+save(log_reg_binary, file = "../results/log_reg_binary.RData")
 
 # Save the multinomial regression multi-class model
-save(log_reg_multi, file = "../data/log_reg_multi.RData")
+save(log_reg_multi, file = "../results/log_reg_multi.RData")
 ```
 
 # Predition on claims-test.RData
@@ -252,7 +286,7 @@ load("../data/claims-test.RData")
 ## Clean the test data
 ```{r}
 # Clean test data
-#claims_test_clean <- claims_test %>%
+claims_test_clean <- claims_test %>%
   #parse_data()
 
 claims_test_clean %>% head(5)
@@ -344,7 +378,7 @@ pred_df_multi <- tibble(.id = test_unigrams_tfidf$.id,
 pred_df <- left_join(pred_df_binary, pred_df_multi, by = ".id")
 
 # Save predictions
-save(pred_df, file = "../data/pred_df.RData")
+save(pred_df, file = "../results/preds-group2.RData")
 ```
 
 
