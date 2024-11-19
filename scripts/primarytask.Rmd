@@ -172,10 +172,7 @@ pred_df <- test_labels_unigrams %>%
                               labels = levels(bclass)))
 
 # define classification metric panel
-panel <- metric_set(sensitivity,
-                    specificity,
-                    accuracy,
-                    roc_auc)
+panel <- metric_set(sensitivity, specificity, accuracy, roc_auc)
 
 # compute test set accuracy
 pred_df %>%  panel(truth = bclass,
@@ -183,6 +180,7 @@ pred_df %>%  panel(truth = bclass,
                    pred,
                    event_level = 'second')
   
+
 ```
 
 ## Multinomial regression for Multiclass Model
@@ -243,8 +241,8 @@ predicted_labels <- factor(pred_class, levels = levels(test_labels_unigrams$mcla
 pred_tbl <- table(true_labels, predicted_labels)
 
 # Calculate accuracy
-accuracy <- sum(diag(pred_tbl)) / sum(pred_tbl)
-print(paste("Accuracy:", round(accuracy, 4)))
+accuracy_test <- sum(diag(pred_tbl)) / sum(pred_tbl)
+print(paste("Accuracy:", round(accuracy_test, 4)))
 
 # Calculate precision per class
 precision <- diag(pred_tbl) / rowSums(pred_tbl)
@@ -286,7 +284,7 @@ load("../data/claims-test.RData")
 ## Clean the test data
 ```{r}
 # Clean test data
-claims_test_clean <- claims_test %>%
+#claims_test_clean <- claims_test %>%
   #parse_data()
 
 claims_test_clean %>% head(5)
