@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Valerie De La Fuente, Mai Uyen Thanh Huynh, Casey Alexander Linden, Nazhah Mir">
+<meta name="author" content="Valerie De La Fuente, Mai Uyen Huynh, Casey Alexander Linden, Nazhah Mir">
 <meta name="dcterms.date" content="2024-11-20">
 
 <title>Summary of Exploratory Tasks</title>
@@ -91,7 +91,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>Valerie De La Fuente, Mai Uyen Thanh Huynh, Casey Alexander Linden, Nazhah Mir </p>
+             <p>Valerie De La Fuente, Mai Uyen Huynh, Casey Alexander Linden, Nazhah Mir </p>
           </div>
   </div>
     
@@ -147,6 +147,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="results" class="level3">
 <h3 class="anchored" data-anchor-id="results">Results</h3>
 <p>The data with headers has a sensitivity estimate of 0.8044 and a specificity estimate of 0.7436, while the data without headers has a sensitivity estimate of 0.8468 and a specificity estimate of 0.7861. This indicates that the data with headers correctly identifies true positives and true negatives at a lower rate than the data without headers. The accuracy estimate of the predictions of the data with headers is 0.7761 and the accuracy estimate of the data without headers is 0.8202, suggesting that including header content did not improve predictions. Surprisingly, the data with headers has a ROC AUC estimate of 0.8705, around 0.01 higher than that of the data without headers. This contrast illustrates that the data with headers may have higher discriminatory ability, while the data without headers has better classification performance in terms of final predictions.</p>
+<p>A reasoning for this result could be that including the headers added unnecessary information about the webpages that are not relevant to classifying the webpage. For example, including headers in the HTML scraping could result in headers from webpage navigation, words like “home”, “login”, or “filter”, that provide no context to the actual content of the webpage. Having this irrelevant information could result in the model having lower accuracy.</p>
 </section>
 </section>
 <section id="bigrams" class="level2">
@@ -154,8 +155,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Do bigrams capture additional information relevant to the classification of interest? Answer the question, <strong>briefly</strong> describe what analysis you conducted to arrive at your answer, and provide quantitative evidence supporting your answer.</p>
 <section id="methodology-1" class="level3">
 <h3 class="anchored" data-anchor-id="methodology-1">Methodology</h3>
-<p>The data with headers, <code>claims-clean-headers</code>, is tokenized into bigrams, and converted into a TF-IDF. Principal component analysis is performed on the data with headers and bigrams. Then, the training data undergoes an initial logistic regression model fit, where its predicted probabilities are extracted and transformed into log-odds values. The top 50 principal components and the log-odds are used to fit a second logistic regression model.</p>
-<p>Class metrics are calculated on the test predictions and the output is as follows:</p>
+<p>The data with headers, <code>claims-clean-headers</code>, is tokenized into bigrams, and converted into a TF-IDF. Principal component analysis is performed on the data with headers and bigrams. Then, the training data undergoes an initial logistic regression model fit, where its predicted probabilities are extracted and transformed into log-odds values. The first 50 principal components and the log-odds are used to fit a second logistic regression model.</p>
+<p>Class metrics are calculated on the test predictions from the second logistic regression model and the output is as follows:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">load</span>(<span class="st">"../data/claims_clean_bigrams_metrics.RData"</span>)</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>claims_clean_bigrams_metrics</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -170,7 +171,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="results-1" class="level3">
 <h3 class="anchored" data-anchor-id="results-1">Results</h3>
-<p>The bigram data with headers has a sensitivity estimate of 0.9691 and a specificity estimate of 0.1489, indicating that the mdoel is very good at correctly identifying positive cases but cannot accurately identify negative cases. Contrastly, the unigram data with headers has a sensitivity estimate of 0.8044 and a specificity estimate of 0.7436. The unigram with headers is more consistent in simultaneously identifying positive and negative cases. The bigram data with headers has an accuracy estimate of 0.5654, while the unigram data with headers has an accuracy estimate of 0.7762, indicating that the unigram data with headers has better predicting abilities.The bigram data with headers has an ROC AUC estimate of 0.6131827 and the unigram data with headers has an ROC AUC estimate of 0.8705. This contrast suggests that unigram data with headers is better at distinguishing positive and negative cases. Overall, the low performance of the bigram model indicates that bigrams do not capture any additional information relavant to the classification of interest.</p>
+<p>The bigram data with headers has a sensitivity estimate of 0.9691 and a specificity estimate of 0.1489, indicating that the model is very good at correctly identifying positive cases but cannot accurately identify negative cases. Contrarily, the unigram data with headers has a sensitivity estimate of 0.8044 and a specificity estimate of 0.7436. The unigram with headers is more consistent in simultaneously identifying positive and negative cases. The bigram data with headers has an accuracy estimate of 0.5654, while the unigram data with headers has an accuracy estimate of 0.7762, indicating that the unigram data with headers has better predicting abilities.The bigram data with headers has an ROC AUC estimate of 0.6131827 and the unigram data with headers has an ROC AUC estimate of 0.8705. This contrast suggests that unigram data with headers is better at distinguishing positive and negative cases. Overall, the low performance of the bigram model indicates that bigrams do not capture any additional information relevant to the classification of interest.</p>
 </section>
 </section>
 
