@@ -1,14 +1,16 @@
 ---
 title: "Predictive modeling of claims status"
-author: 'YOUR NAMES HERE'
+author: 'Valerie De La Fuente, Mai Uyen Huynh, Casey Alexander Linden, Nazhah Mir'
 date: today
 ---
 
 ### Abstract
 
-Provide a 3-5 sentence summary of your work on the primary task. Indicate what input data was used, what method was used for binary class predictions, what method was used for multiclass predictions, and what estimated accuracies were achieved.
+Provide a 3-5 sentence summary of your work on the primary task. Indicate what input data was used, what method was used for binary class predictions, what method was used for multiclass predictions, and what estimated accuracies were achieved. 
 
 > *Header and paragraph content was scraped from the raw webpages and processed into term frequencies of word tokens. For binary classification, a two-layer neural network yielded an estimated 81.4% accuracy; for multiclass classification, a support vector machine gave 78% accuracy.*
+
+For the primary task, we built predictive models to classify the labels of webpages based on header and paragraph content, which was extracted from raw webpages and processed into term frequencies based on word tokens. This data consisted of cleaned text headers, which was then transformed into unigram features and represented as TF-IDF matrices. For binary classification, we used a logistic regression model, while for multiclass classification, we used a multinomial regression model. The estimated accuracy of the logistic regression model is 66%, and the estimated accuracy of the multinomial regression model is 61.3%. 
 
 ### Preprocessing
 
@@ -20,6 +22,8 @@ In one paragraph lay out your preprocessing pipeline. No need to provide exact s
 
 -   how cleaned text was represented quantitatively
 
+The preprocessing pipeline involved extracting raw HTML from about 3,000 websites, 2,165 of which contained class labels. The remaining 929 webpages were unlabeled. The extracted text was first cleaned by removing text that would not be informative towards classification, such as punctuation and stopwords like articles, pronouns, etc. This was then followed by tokenization into unigrams, which is the breaking down of text into its most meaningful units. The cleaned text was  represented quantitatively through TF-IDF, which is a statistical method that measures how important a word is relative to a specific document and to the overall dataset. The dataset was then filtered to only include terms that appeared at least 5 times, and the resulting matrix was partitioned into training and testing datasets. Finally, the data was simplified using a method called Singular Value Decomposition (SVD), which kept only the top 173 components. This reduced the number of features while keeping the most important information, making the data smaller and easier to use for building machine learning models.
+
 ### Methods
 
 Describe your final predictive models. Include one paragraph with details on the binary classification approach, and one on the multiclass approach. Include for each:
@@ -29,6 +33,12 @@ Describe your final predictive models. Include one paragraph with details on the
 -   model specification and hyperparameter selection
 
 -   training method
+
+#### Binary Classification
+For the binary classification task, logistic regression was used with an elastic net regularization specification. A hyperparameter value of 0.3 was chosen for $\alpha$ to combine ridge and lasso penalties, which favors the Ridge penalty in this case. Cross-validation was then used to determine the optimal strength $\lambda$. The training data, which was previously transformed through SVD in the preprocessing pipeline, was used to train the model. The model predicted how likely each case was to be positive, or having a likelihood of belonging to the positive class being over 50%, and classified it as negative otherwise. To calculate how well the model was performed, performance metrics such as sensitivity, specificity, accuracy, and ROC-AUC scores were calculated.
+
+#### Multiclass Classification Model
+For the multiclass classification task, multinomal logistic regression was employed, and it also used the elastic net regularization specification. For this model, a hyperparameter value of 0.2 was chosen for $\alpha$, which favors the ridge penalty even more than the binary classification model did. Similar to the binary case, cross-validation identified the optimal strength ($\lambda$) for regularization. The model was trained on the same SVD-transformed training data, in this case to predict multiple class labels. The model's performance was evaluated using a confusion matrix to evaluate scores such as accuracy, specificity, sensitivity, and ROC AUC scores.  
 
 ### Results
 

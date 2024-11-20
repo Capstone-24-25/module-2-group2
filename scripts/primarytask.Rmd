@@ -172,7 +172,12 @@ pred_df <- test_labels_unigrams %>%
                               labels = levels(bclass)))
 
 # define classification metric panel
-panel <- metric_set(sensitivity, specificity, accuracy, roc_auc)
+panel <- yardstick::metric_set(
+  yardstick::sensitivity,
+  yardstick::specificity,
+  yardstick::accuracy,
+  yardstick::roc_auc
+)
 
 # compute test set accuracy
 pred_df %>%  panel(truth = bclass,
@@ -275,7 +280,7 @@ save(log_reg_binary, file = "../results/log_reg_binary.RData")
 save(log_reg_multi, file = "../results/log_reg_multi.RData")
 ```
 
-# Predition on claims-test.RData
+# Prediction on claims-test.RData
 ```{r}
 # Load in the new test data
 load("../data/claims-test.RData")
