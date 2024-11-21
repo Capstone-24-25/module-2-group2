@@ -44,4 +44,17 @@ For the multiclass classification task, multinomal logistic regression was emplo
 
 Indicate the predictive accuracy of the binary classifications and the multiclass classifications. Provide a table for each, and report sensitivity, specificity, and accuracy.[^1]
 
+#### Binary Class Metrics Table
+```{r}
+bclass_metricstable <- read.csv("/Users/nazhah/Documents/PSTAT197/module-2-group2/scripts/binary_metrics_table.csv")
+knitr::kable(bclass_metricstable, caption = "Metrics Table for Binary Classification")
+```
+The model for binary classification, or for classifying whether fraud was detected or not, was 72% accurate, which means that the model correctly classified about 72& of the total predictions. The sensitivity of the model is 70%, which means that the model identifies actual positive cases about 70% of the time. The specificity of the model is 75%, which means that the model classifies negative cases 75% of the time. 
+#### Multiclass Metrics Table 
+```{r}
+mclass_metricstable <- read.csv("/Users/nazhah/Documents/PSTAT197/module-2-group2/scripts/mclass_metricstable.csv")
+knitr::kable(mclass_metricstable, caption = "Metrics Table for Multiclass Classification")
+```
+The model for binary classification, or for classifying whether fraud was detected or not, was 65% accurate, which means that the model correctly classified about 65& of the total predictions. The recall of the model is 84%, meaning that the model correctly identifies 84% of all actual fraudulent cases. However, the precision of the model is a mere 49.9%, which means that when the model predicts fraud, it is correct only 49.9% of the time. 
+
 [^1]: Read [this article](https://yardstick.tidymodels.org/articles/multiclass.html) on multiclass averaging.

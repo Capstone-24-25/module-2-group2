@@ -256,12 +256,17 @@ panel <- yardstick::metric_set(
 )
 
 # compute test set accuracy
-pred_df %>%  panel(truth = bclass,
+bclass_metricstable <- pred_df %>%  panel(truth = bclass,
                    estimate = bclass.pred,
                    pred,
                    event_level = 'second')
   
-
+bclass_metricstable
+write.csv(bclass_metricstable, file = "binary_metrics_table.csv", row.names = FALSE)
+```
+```{r}
+getwd()  # Check the current working directory
+list.files()
 ```
 
 ## Multinomial regression for Multiclass Model
@@ -344,6 +349,18 @@ macro_f1 <- mean(f1_score, na.rm = TRUE)
 print(paste("Macro Precision:", round(macro_precision, 4)))
 print(paste("Macro Recall:", round(macro_recall, 4)))
 print(paste("Macro F1 Score:", round(macro_f1, 4)))
+
+mclass_metricstable <- tibble(
+  Metric = c("Accuracy", "Macro Precision", "Macro Recall", "Macro F1 Score"),
+  Value = c(
+    round(accuracy_test, 4),
+    round(macro_precision, 4),
+    round(macro_recall, 4),
+    round(macro_f1, 4)
+  )
+)
+
+write.csv(mclass_metricstable, file = "mclass_metricstable.csv", row.names = FALSE)
 ```
 
 
