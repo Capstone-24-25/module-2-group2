@@ -26,7 +26,6 @@ library(tensorflow)
 
 ```{r}
 # Loading the Data
-source('preprocessing.R')
 load("../data/claims-raw.RData")
 load("../data/claims-clean-example.RData")
 load('../data/claims-clean-headers.RData')
@@ -34,35 +33,35 @@ load('../data/claims-clean-headers.RData')
 
 ```{r}
 # # function to parse html and clean text
-# parse_fn <- function(.html){
-#   read_html(.html) %>%
-#     html_elements('p, h1, h2, h3, h4 , h5 , h6') %>%
-#     html_text2() %>%
-#     str_c(collapse = ' ') %>%
-#     rm_url() %>%
-#     rm_email() %>%
-#     str_remove_all('\'') %>%
-#     str_replace_all(paste(c('\n', 
-#                             '[[:punct:]]', 
-#                             'nbsp', 
-#                             '[[:digit:]]', 
-#                             '[[:symbol:]]'),
-#                           collapse = '|'), ' ') %>%
-#     str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>%
-#     tolower() %>%
-#     str_replace_all("\\s+", " ")
-# }
-# 
-# # function to apply to claims data
-# parse_data <- function(.df){
-#   out <- .df %>%
-#     filter(str_detect(text_tmp, '<!')) %>%
-#     rowwise() %>%
-#     mutate(text_clean = parse_fn(text_tmp)) %>%
-#     unnest(text_clean) 
-#   return(out)
-# }
-# 
+parse_fn <- function(.html){
+   read_html(.html) %>%
+     html_elements('p') %>%
+     html_text2() %>%
+     str_c(collapse = ' ') %>%
+     rm_url() %>%
+     rm_email() %>%
+     str_remove_all('\'') %>%
+     str_replace_all(paste(c('\n', 
+                             '[[:punct:]]', 
+                             'nbsp', 
+                             '[[:digit:]]', 
+                             '[[:symbol:]]'),
+                           collapse = '|'), ' ') %>%
+     str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>%
+     tolower() %>%
+     str_replace_all("\\s+", " ")
+ }
+ 
+ # function to apply to claims data
+ parse_data <- function(.df){
+   out <- .df %>%
+     filter(str_detect(text_tmp, '<!')) %>%
+     rowwise() %>%
+     mutate(text_clean = parse_fn(text_tmp)) %>%
+     unnest(text_clean) 
+   return(out)
+ }
+ 
 # nlp_fn <- function(parse_data.out){
 #   out <- parse_data.out %>% 
 #     unnest_tokens(output = token, 
@@ -140,7 +139,7 @@ claims_unigrams_tfidf <- claims_unigrams %>%
 set.seed(12345)
 # Partition data
 #headers_unigrams_tfidf
-partitions_unigrams <- claims_clean_tfidf %>% initial_split(prop = 0.8)
+partitions_unigrams <- claims_unigrams_tfidf %>% initial_split(prop = 0.8)
 
 train_dtm_unigrams <- training(partitions_unigrams) %>% 
   select(-.id, -bclass, -mclass)
@@ -366,8 +365,8 @@ load("../data/claims-test.RData")
 ## Clean the test data
 ```{r}
 # Clean test data
-#claims_test_clean <- claims_test %>%
-  #parse_data()
+claims_test_clean <- claims_test %>%
+  parse_data()
 
 claims_test_clean %>% head(5)
 ```
