@@ -143,7 +143,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <blockquote class="blockquote">
 <p><em>Header and paragraph content was scraped from the raw webpages and processed into term frequencies of word tokens. For binary classification, a two-layer neural network yielded an estimated 81.4% accuracy; for multiclass classification, a support vector machine gave 78% accuracy.</em></p>
 </blockquote>
-<p>For the primary task, we built predictive models to classify the labels of webpages based on header and paragraph content, which was extracted from raw webpages and processed into term frequencies based on word tokens. This data consisted of cleaned text headers, which was then transformed into unigram features and represented as TF-IDF matrices. For binary classification, we used a logistic regression model, while for multiclass classification, we used a multinomial regression model. The estimated accuracy of the logistic regression model is 66%, and the estimated accuracy of the multinomial regression model is 61.3%.</p>
+<p>For the primary task, we built predictive models to classify the labels of webpages based on header and paragraph content, which was extracted from raw webpages and processed into term frequencies based on word tokens. Following cleaning, this data was then transformed into unigram features and represented as TF-IDF matrices. For binary classification, we used a logistic regression model, while for multiclass classification, we used a multinomial regression model. The estimated accuracy of the logistic regression model is 72%, and the estimated accuracy of the multinomial regression model is 65%.</p>
 </section>
 <section id="preprocessing" class="level3">
 <h3 class="anchored" data-anchor-id="preprocessing">Preprocessing</h3>
@@ -250,6 +250,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 </div>
 <p>The model for binary classification, or for classifying whether fraud was detected or not, was 65% accurate, which means that the model correctly classified about 65&amp; of the total predictions. The recall of the model is 84%, meaning that the model correctly identifies 84% of all actual fraudulent cases. However, the precision of the model is a mere 49.9%, which means that when the model predicts fraud, it is correct only 49.9% of the time.</p>
+<p>Both of our models unfortunately did worse than the original base models. In the future, we would try to implement neural networks, as those typically work better for natural language processing. We unfortunately had trouble running Keras and Tensorflow through RStudio, so in the future we will try to implement a neural network using Python.</p>
 </section>
 </section>
 
