@@ -19,6 +19,8 @@ library(sparsesvd)
 library(glmnet)
 library(e1071) # SVM library
 library(yardstick)
+library(keras)
+library(tensorflow)
 ```
 
 
@@ -30,16 +32,90 @@ load("../data/claims-clean-example.RData")
 load('../data/claims-clean-headers.RData')
 ```
 
+```{r}
+# # function to parse html and clean text
+# parse_fn <- function(.html){
+#   read_html(.html) %>%
+#     html_elements('p, h1, h2, h3, h4 , h5 , h6') %>%
+#     html_text2() %>%
+#     str_c(collapse = ' ') %>%
+#     rm_url() %>%
+#     rm_email() %>%
+#     str_remove_all('\'') %>%
+#     str_replace_all(paste(c('\n', 
+#                             '[[:punct:]]', 
+#                             'nbsp', 
+#                             '[[:digit:]]', 
+#                             '[[:symbol:]]'),
+#                           collapse = '|'), ' ') %>%
+#     str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>%
+#     tolower() %>%
+#     str_replace_all("\\s+", " ")
+# }
+# 
+# # function to apply to claims data
+# parse_data <- function(.df){
+#   out <- .df %>%
+#     filter(str_detect(text_tmp, '<!')) %>%
+#     rowwise() %>%
+#     mutate(text_clean = parse_fn(text_tmp)) %>%
+#     unnest(text_clean) 
+#   return(out)
+# }
+# 
+# nlp_fn <- function(parse_data.out){
+#   out <- parse_data.out %>% 
+#     unnest_tokens(output = token, 
+#                   input = text_clean, 
+#                   token = 'words',
+#                   stopwords = str_remove_all(stop_words$word, 
+#                                              '[[:punct:]]')) %>%
+#     mutate(token.lem = lemmatize_words(token)) %>%
+#     filter(str_length(token.lem) > 2) %>%
+#     count(.id, bclass, mclass, token.lem, name = 'n') %>%
+#     bind_tf_idf(term = token.lem, 
+#                 document = .id,
+#                 n = n) %>%
+#     pivot_wider(id_cols = c('.id', 'bclass', 
+#                             'mclass'),
+#                 names_from = 'token.lem',
+#                 values_from = 'tf_idf',
+#                 values_fill = 0)
+#   return(out)
+# }
+# #clean dataset
+# claims_clean <- claims_raw %>% 
+#   parse_data()
+# # claims_clean_unigrams <- nlp_fn(claims_clean)
+# ```
+# 
+# ```{r}
+# #Tokenize tf_idf term matrix
+# claims_clean_tfidf <- claims_clean %>%
+#   mutate(text_clean = str_trim(text_clean)) %>%            
+#   filter(str_length(text_clean) > 5) %>%                  
+#   unnest_tokens(output = 'token', input = text_clean) %>% 
+#   group_by(.id, bclass, mclass) %>%                       
+#   count(token, name = "n") %>%                            
+#   bind_tf_idf(term = token, document = .id, n = n) %>%    
+#   pivot_wider(
+#     id_cols = c(.id, bclass, mclass),                     
+#     names_from = token,                                  
+#     values_from = tf_idf,                                 
+#     values_fill = 0) %>%
+#   ungroup()         
+```
+
 ### Tokenize into Unigrams
 ```{r}
-# Set seed for reproducibility
-set.seed(1234)
+# # Set seed for reproducibility
+# set.seed(1234)
 # Tokenize into unigrams
-headers_unigrams <- claims_clean_headers %>% 
-  select(.id, bclass, mclass, text_clean) %>% 
-  unnest_tokens(output = word, 
-                input = text_clean, 
-                token = 'words', 
+claims_unigrams <- claims_clean %>%
+  select(.id, bclass, mclass, text_clean) %>%
+  unnest_tokens(output = word,
+                input = text_clean,
+                token = 'words',
                 stopwords = str_remove_all(stop_words$word,'[[:punct:]]'))
 
 ```
@@ -47,13 +123,13 @@ headers_unigrams <- claims_clean_headers %>%
 ### Change Unigram Data into a TF-IDF
 ```{r}
 # Count unigrams and compute TF-IDF
-headers_unigrams_tfidf <- headers_unigrams %>% 
-  count(.id, bclass, mclass, word, name = 'n') %>% 
+claims_unigrams_tfidf <- claims_unigrams %>%
+  count(.id, bclass, mclass, word, name = 'n') %>%
   bind_tf_idf(term = word,
-              document = .id, 
-              n = n) %>% 
+              document = .id,
+              n = n) %>%
   filter(n>=5) %>%
-  pivot_wider(id_cols = c(.id, bclass, mclass), 
+  pivot_wider(id_cols = c(.id, bclass, mclass),
               names_from = word,
               values_from = tf_idf,
               values_fill = 0)
@@ -63,7 +139,8 @@ headers_unigrams_tfidf <- headers_unigrams %>%
 ```{r}
 set.seed(12345)
 # Partition data
-partitions_unigrams <- headers_unigrams_tfidf %>% initial_split(prop = 0.8)
+#headers_unigrams_tfidf
+partitions_unigrams <- claims_clean_tfidf %>% initial_split(prop = 0.8)
 
 train_dtm_unigrams <- training(partitions_unigrams) %>% 
   select(-.id, -bclass, -mclass)
@@ -384,7 +461,163 @@ pred_df <- left_join(pred_df_binary, pred_df_multi, by = ".id")
 save(pred_df, file = "../results/preds-group2.RData")
 ```
 
+```{r}
+# Partition the Data
+set.seed(12345)
+partitions <- claims_clean %>%
+  initial_split(prop = 0.8)
 
+train_text <- training(partitions) %>%
+  pull(text_clean)
+train_labels_binary <- training(partitions) %>%
+  pull(bclass) %>%
+  as.numeric() - 1 # Binary labels must be 0/1
+train_labels_multiclass <- training(partitions) %>%
+  pull(mclass) %>%
+  as.numeric() - 1 # Multiclass labels must start at 0
+
+test_text <- testing(partitions) %>%
+  pull(text_clean)
+test_labels_binary <- testing(partitions) %>%
+  pull(bclass) %>%
+  as.numeric() - 1
+test_labels_multiclass <- testing(partitions) %>%
+  pull(mclass) %>%
+  as.numeric() - 1
+train_text <- as.character(train_text)
+test_text <- as.character(test_text)
+```
+
+```{r}
+# Convert training data to TensorFlow dataset
+train_dataset <- tensor_slices_dataset(list(train_text, train_labels_binary)) %>%
+  dataset_batch(batch_size = 32)
+
+# Convert testing data to TensorFlow dataset
+test_dataset <- tensor_slices_dataset(list(test_text, test_labels_binary)) %>%
+  dataset_batch(batch_size = 32)
+```
+
+```{r}
+# Preprocessing Layer for Neural Networks
+preprocess_layer <- layer_text_vectorization(
+  standardize = NULL,
+  split = 'whitespace',
+  max_tokens = 10000,
+  output_mode = 'tf_idf'
+)
+
+preprocess_layer %>% adapt(train_text)
+
+# Define Neural Network Function
+build_nn_model <- function(output_units, activation, loss, metrics) {
+  keras_model_sequential() %>%
+    preprocess_layer() %>%
+    layer_dropout(0.2) %>%
+    layer_dense(units = 128, activation = 'relu') %>%
+    layer_dropout(0.2) %>%
+    layer_dense(units = output_units, activation = activation) %>%
+    compile(
+      loss = loss,
+      optimizer = optimizer_adam(),
+      metrics = metrics
+    )
+}
+```
+
+```{r}
+# Binary Classification Neural Network
+binary_model <- build_nn_model(
+  output_units = 1,
+  activation = 'sigmoid',
+  loss = 'binary_crossentropy',
+  metrics = 'binary_accuracy'
+)
+
+# Train Binary Model
+binary_history <- binary_model %>%
+  fit(
+    x = train_text,
+    y = train_labels_binary,
+    validation_split = 0.2,
+    epochs = 10,
+    batch_size = 32
+  )
+
+# Evaluate Binary Model
+binary_results <- binary_model %>% evaluate(x = test_text, y = test_labels_binary)
+print(binary_results)
+
+# Multiclass Classification Neural Network
+num_classes <- length(unique(train_labels_multiclass))
+multiclass_model <- build_nn_model(
+  output_units = num_classes,
+  activation = 'softmax',
+  loss = 'sparse_categorical_crossentropy',
+  metrics = 'sparse_categorical_accuracy'
+)
+
+# Train Multiclass Model
+multiclass_history <- multiclass_model %>%
+  fit(
+    x = train_text,
+    y = train_labels_multiclass,
+    validation_split = 0.2,
+    epochs = 10,
+    batch_size = 32
+  )
+
+# Evaluate Multiclass Model
+multiclass_results <- multiclass_model %>% evaluate(x = test_text, y = test_labels_multiclass)
+print(multiclass_results)
+
+# Predictions and Metrics
+binary_predictions <- binary_model %>% predict(test_text) %>% as.numeric()
+binary_pred_classes <- ifelse(binary_predictions > 0.5, 1, 0)
+
+multiclass_predictions <- multiclass_model %>% predict(test_text)
+multiclass_pred_classes <- apply(multiclass_predictions, 1, which.max) - 1
+```
+
+```{r}
+# Evaluation for Binary Model
+binary_metrics <- tibble(
+  truth = test_labels_binary,
+  predicted = binary_pred_classes
+) %>%
+  metrics(truth = truth, estimate = predicted)
+print(binary_metrics)
+```
+
+```{r}
+# Evaluation for Multiclass Model
+multiclass_metrics <- tibble(
+  truth = test_labels_multiclass,
+  predicted = multiclass_pred_classes
+) %>%
+  metrics(truth = truth, estimate = predicted)
+print(multiclass_metrics)
+```
+
+```{r}
+# Evaluation for Binary Model
+binary_metrics <- tibble(
+  truth = test_labels_binary,
+  predicted = binary_pred_classes
+) %>%
+  metrics(truth = truth, estimate = predicted)
+print(binary_metrics)
+```
+
+```{r}
+# Evaluation for Multiclass Model
+multiclass_metrics <- tibble(
+  truth = test_labels_multiclass,
+  predicted = multiclass_pred_classes
+) %>%
+  metrics(truth = truth, estimate = predicted)
+print(multiclass_metrics)
+```
 
 
 
